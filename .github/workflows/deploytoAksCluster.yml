@@ -1,0 +1,50 @@
+on: [push]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    
+    - uses: azure/docker-login@v1
+      with:
+        login-server: acrmarch09pm.azurecr.io
+        username: ${{ secrets.acr_acrmarch09pm_username }}
+        password: ${{ secrets.acr_acrmarch09pm_password }}
+    
+    - name: Build and push image to ACR
+      id: build-image
+      run: |
+        docker build "$GITHUB_WORKSPACE/" -f  "Dockerfile" -t acrmarch09pm.azurecr.io/k8smarch09pm:${{ github.sha }} --label dockerfile-path=Dockerfile
+        docker push acrmarch09pm.azurecr.io/k8smarch09pm:${{ github.sha }}
+    
+    - uses: azure/k8s-set-context@v1
+      with:
+         kubeconfig: ${{ secrets.aks_k8smarch09pm_kubeConfig }}
+      id: login
+    
+    - name: Create namespace
+      run: |
+        namespacePresent=`kubectl get namespace | grep nspace-march09pm | wc -l`
+        if [ $namespacePresent -eq 0 ]
+        then
+            echo `kubectl create namespace nspace-march09pm`
+        fi
+
+    - uses: azure/k8s-create-secret@v1
+      with:
+        namespace: nspace-march09pm
+        container-registry-url: acrmarch09pm.azurecr.io
+        container-registry-username: ${{ secrets.acr_acrmarch09pm_username }}
+        container-registry-password: ${{ secrets.acr_acrmarch09pm_password }}
+        secret-name: k8smarch09pmdockerauth
+       
+    - uses: azure/k8s-deploy@v1.2
+      with:
+        namespace: nspace-march09pm
+        manifests: |
+          manifests/deployment.yml
+          manifests/service.yml
+        images: |
+          acrmarch09pm.azurecr.io/k8smarch09pm:${{ github.sha }}
+        imagepullsecrets: |
+          k8smarch09pmdockerauth
