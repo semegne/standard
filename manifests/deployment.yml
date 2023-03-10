@@ -1,0 +1,19 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: "k8smarch09pm-9ee2"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: "k8smarch09pm-9ee2"
+  template:
+    metadata:
+      labels:
+        app: "k8smarch09pm-9ee2"
+    spec:
+      containers:
+        - name: "k8smarch09pm-9ee2"
+          image: "acrmarch09pm.azurecr.io/k8smarch09pm"
+          ports:
+          - containerPort: 80
