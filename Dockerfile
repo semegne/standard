@@ -2,4 +2,4 @@
 FROM nginx:alpine
 LABEL autho="bisema-basic"
 
-COPY ./bisemaa /usr/share/nginx/html
+COPY ./bisema-basic /usr/share/nginx/html
